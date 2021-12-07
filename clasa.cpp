@@ -10,7 +10,11 @@ class Graf
 {
     int muchii;
     int noduri;
+    int maxim;
+    int start;
+    vector<int> okey;
     vector<int> adiacenta[1000];
+    vector<int> pozitii[1000];
     vector<vector<int>> lista;
 public:
     //DFS
@@ -408,11 +412,7 @@ public:
         for (int i = 2; i <= noduri; i++)
             if (distanta[i] == 10000)
                 out << 0;
-            /*{
-                out << "Ciclu negativ!";
-                break;
-            }*/
-            else 
+            else
                 out << distanta[i] << " ";
 
     }
@@ -443,17 +443,198 @@ public:
             {
                 if (a < b)
                     multime[b] = a;
-                else 
+                else
                     multime[a] = b;
             }
             else
             {
                 if (a == b)
                     out << "DA\n";
-                else 
+                else
                     out << "NU\n";
             }
         }
+    }
+    //Floyd-Warshall
+    void citire_FW()
+    {
+        in >> noduri;
+        for (int i = 0; i <= noduri; i++)
+            adiacenta[i].resize(noduri + 1);
+        for (int i = 1; i <= noduri; i++)
+            for (int j = 1; j <= noduri; j++)
+                in >> adiacenta[i][j];
+    }
+    void FW()
+    {
+        for (int k = 1; k <= noduri; k++)
+            for (int i = 1; i <= noduri; i++)
+                for (int j = 1; j <= noduri; j++)
+                    if ((i != j) && adiacenta[i][k] && adiacenta[k][j])
+                        if ((adiacenta[i][j] > (adiacenta[i][k] + adiacenta[k][j])) || (!adiacenta[i][j]))
+                            adiacenta[i][j] = adiacenta[i][k] + adiacenta[k][j];
+    }
+    void afisare_FW()
+    {
+        for (int i = 1; i <= noduri; i++)
+        {
+            for (int j = 1; j <= noduri; j++)
+                out << adiacenta[i][j] << " ";
+            out << "\n";
+        }
+    }
+    //Diametrul unui arbore
+    void citire_arbore()
+    {
+        in >> noduri;
+        okey.resize(noduri + 1);
+        for (int i = 1; i < noduri; i++)
+            adiacenta[i].resize(noduri + 1);
+        for (int i = 1; i < noduri; i++)
+        {
+            int x, y;
+            in >> x >> y;
+            adiacenta[x].push_back(y);
+            adiacenta[y].push_back(x);
+            okey.push_back(0);
+        }
+        okey.push_back(0);
+    }
+    void DFS_arbore(int nod, int distanta)
+    {
+        okey[nod] = 1;
+        if (distanta > maxim)
+        {
+            maxim = distanta;
+            start = nod;
+        }
+        okey[nod] = 1;
+        for (int i = 0; i < adiacenta[nod].size(); i++)
+            if (!okey[adiacenta[nod][i]])
+                DFS_arbore(adiacenta[nod][i], distanta + 1);
+        //okey[nod] = 0;
+    }
+    void afisare_diametru()
+    {
+        /*for (int i = 0; i < noduri; i++)
+            DFS_arbore(i, 0);
+        out << maxim + 1;*/
+        DFS_arbore(1, 0);
+        for (int i = 1; i <= noduri; i++)
+            okey[i] = 0;
+        maxim = 0;
+        DFS_arbore(start, 0);
+        out << maxim + 1; 
+    }
+    //Flux maxim
+    void citire_flux()
+    {
+        in >> noduri >> muchii;
+        for (int i = 1; i < muchii; i++)
+            adiacenta[i].resize(noduri + 1);
+        int x, y, cost;
+        while (in >> x >> y >> cost)
+            adiacenta[x][y] = cost;
+    }
+    int bfs_flux(vector<int> Fluxuri[1000], vector<int>& vizitat, vector<int>& coada, vector<int>& distanta)
+    {
+        int primul = 1, ultimul = 1;
+        coada[primul] = 1;
+        vizitat[1] = -1;
+        distanta[1] = 100000;
+        while (primul <= ultimul)
+        {
+            for (int i = 1; i <= noduri; i++)
+                if (!vizitat[i] && adiacenta[coada[primul]][i] - Fluxuri[coada[primul]][i] > 0)
+                {
+                    vizitat[i] = coada[primul];
+                    coada[++ultimul] = i;
+                    if (distanta[coada[primul]] < adiacenta[coada[primul]][i] - Fluxuri[coada[primul]][i])
+                        distanta[i] = distanta[coada[primul]];
+                    else
+                        distanta[i] = adiacenta[coada[primul]][i] - Fluxuri[coada[primul]][i];
+                    if (i == noduri)
+                        return 0;
+                }
+            primul++;
+        }
+    }
+    void afisare_flux()
+    {
+        vector<int> Fluxuri[1000], vizitat(noduri + 1, 0), coada(noduri + 1, 0), distanta(noduri + 1, 0);
+        for (int i = 0; i < muchii; i++)
+            Fluxuri[i].resize(noduri + 1);
+        for (int i = 0; i < muchii; i++)
+            Fluxuri[i].push_back(0);
+        int x, y, minim, flux = 0;
+        do
+        {
+            for (int i = 1; i <= noduri; i++)
+                distanta[i] = vizitat[i] = coada[i] = 0;
+            bfs_flux(Fluxuri, vizitat, coada, distanta);
+            if (vizitat[noduri])
+            {
+                minim = 100000;
+                x = noduri;
+                y = vizitat[x];
+                minim = distanta[noduri];
+                while (y != -1)
+                {
+                    Fluxuri[y][x] += minim;
+                    Fluxuri[x][y] -= minim;
+                    x = y;
+                    y = vizitat[x];
+                }
+                flux += minim;
+            }
+        } while (vizitat[noduri]);
+        out << flux;
+    }
+    //Ciclu Eulerian
+    void citire_Euler()
+    {
+        in >> noduri >> muchii;
+        okey.resize(noduri + 1);
+        for (int i = 0; i <= muchii; i++)
+        {
+            adiacenta[i].resize(noduri + 1);
+            pozitii[i].resize(noduri + 1);
+        }
+        for (int i = 0; i <= muchii; i++)
+        {
+            okey.push_back(0);
+            adiacenta[i].push_back(0);
+            pozitii[i].push_back(0);
+        }
+        for (int i = 1; i <= muchii; i++)
+        {
+            int x, y;
+            in >> x >> y;
+            adiacenta[x].push_back(y);
+            adiacenta[y].push_back(x);
+            pozitii[x].push_back(i);
+            pozitii[y].push_back(i);
+        }
+    }
+    void dfs_Euler(int x)
+    {
+        for (int i = 0; i < adiacenta[x].size(); i++)
+            if (!okey[pozitii[x][i]])
+            {
+                okey[pozitii[x][i]] = 1;
+                dfs_Euler(adiacenta[x][i]);
+            }
+        out << x << " ";
+    }
+    void afisare_Euler()
+    {
+        for (int i = 1; i <= noduri; i++)
+            if (adiacenta[i].size() % 2 != 0)
+            {
+                out << "-1\n";
+                break;
+            }
+        dfs_Euler(1);
     }
 };
 int main()
@@ -471,33 +652,37 @@ int main()
     cout << "8-Arbore Partial de Cost Minim\n";
     cout << "9-Dijkstra\n";
     cout << "10-Bellman-Ford\n";
-    cout << "11-Paduri de multimi disjuncte\n";
+    cout << "11-Paduri de Multimi Disjuncte\n";
+    cout << "12-Floyd-Warshall\n";
+    cout << "13-Diametrul unui Arbore\n";
+    cout << "14-Flux Maxim\n";
+    cout << "15-Ciclu Eulerian\n";
     cout << "Introduceti numarul problemei de rezolat:";
     cin >> nr_problema;
     if (nr_problema == 1)
     {
         g.citire_DFS();
         g.afisare_DFS();
-            /*
-            6 3
-            1 2
-            1 4
-            3 5
-            */
+        /*
+        6 3
+        1 2
+        1 4
+        3 5
+        */
     }
     else if (nr_problema == 2)
     {
         g.BFS();
-            /*
-            5 7 2
-            1 2
-            2 1
-            2 2
-            3 2
-            2 5
-            5 3
-            4 5
-            */
+        /*
+        5 7 2
+        1 2
+        2 1
+        2 2
+        3 2
+        2 5
+        5 3
+        4 5
+        */
     }
     else if (nr_problema == 3)
     {
@@ -506,7 +691,7 @@ int main()
     else if (nr_problema == 4)
     {
         g.CTC();
-            /*
+        /*
             8 12
             1 2
             2 6
@@ -526,7 +711,7 @@ int main()
     {
         g.citire_DFS();
         g.ST();
-            /*
+        /*
             9 8
             1 2
             1 3
@@ -584,31 +769,90 @@ int main()
     }
     else if (nr_problema == 10)
     {
-    /*
-    5 8
-    1 3 -3
-    1 5 7
-    3 2 -2
-    3 4 7
-    5 1 4
-    5 2 3
-    5 3 4
-    4 5 3
-    */
-    g.BF();
+        /*
+        5 8
+        1 3 -3
+        1 5 7
+        3 2 -2
+        3 4 7
+        5 1 4
+        5 2 3
+        5 3 4
+        4 5 3
+        */
+        g.BF();
     }
     else if (nr_problema == 11)
     {
-    /*
-    4 6
-    1 1 2
-    1 3 4
-    2 1 3
-    2 1 2
-    1 1 3
-    2 1 4
-    */
-    g.Dis();
+        /*
+        4 6
+        1 1 2
+        1 3 4
+        2 1 3
+        2 1 2
+        1 1 3
+        2 1 4
+        */
+        g.Dis();
+    }
+    else if (nr_problema == 12)
+    {
+        /*
+        5
+        0 3 9 8 3
+        5 0 1 4 2
+        6 6 0 4 5
+        2 9 2 0 7
+        7 9 3 2 0
+        */
+        g.citire_FW();
+        g.FW();
+        g.afisare_FW();
+    }
+    else if (nr_problema == 13)
+    {
+        /*
+        11
+        1 2
+        1 3
+        1 4
+        2 5
+        3 6
+        4 7
+        5 8
+        5 9
+        6 10
+        10 11
+        */
+        g.citire_arbore();
+        g.afisare_diametru();
+    }
+    else if (nr_problema == 14)
+    {
+        /*
+        4 5
+        1 2 3
+        1 3 5
+        2 4 6
+        3 4 4
+        3 2 3
+        */
+        g.citire_flux();
+        g.afisare_flux();
+    }
+    else if (nr_problema == 15)
+    {
+        /*
+        4 6
+        1 2
+        1 3
+        2 2
+        2 3
+        3 4
+        3 4
+        */
+        g.citire_Euler();
+        g.afisare_Euler();
     }
     cout << "\nProblema " << nr_problema << " a fost rezolvata, verificati in date.out ce s-a afisat\n";
     in.close();
