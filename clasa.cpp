@@ -10,14 +10,19 @@ class Graf
 {
     int muchii;
     int noduri;
+    int minim;
     int maxim;
     int start;
+    int suma;
     vector<int> okey;
     vector<int> adiacenta[1000];
     vector<int> pozitii[1000];
     vector<vector<int>> lista;
+
 public:
+
     //DFS
+
     void citire_DFS()
     {
         int x, y;
@@ -51,7 +56,9 @@ public:
             }
         out << nr;
     }
+
     //BFS
+
     void BFS()
     {
         int x, y, start;
@@ -89,7 +96,9 @@ public:
         for (int i = 1; i <= noduri; i++)
             cout << distanta[i] << " ";
     }
+
     //Havel Hakimi
+
     void HH()
     {
         vector<int> vector = { 3, 3, 3, 3 };
@@ -124,7 +133,9 @@ public:
         else
             cout << "Nu";
     }
+
     //Componente Tare Conexe
+
     void CTC()
     {
         int  x, y, nr_ctc = 0;
@@ -166,7 +177,9 @@ public:
             cout << "\n";
         }
     }
+
     //Sortare Topologica
+
     void DFS_2(int q, vector <int>& vizitat, vector <int>& afisare)
     {
         vizitat[q] = 1;
@@ -188,8 +201,11 @@ public:
         for (int i = afisare.size() - 1; i >= 0; i--)
             cout << afisare[i] << " ";
     }
+
     //Conexiune Critica
-    void DFS_3(int timp, vector<vector<int>>& v, vector<int>& numarare, int k, int parinte, vector<bool>& vizite, vector<int>& vecin)
+    
+    void DFS_3(int timp, vector<vector<int>>& v, vector<int>& numarare, int k, int parinte,
+        vector<bool>& vizite, vector<int>& vecin)
     {
         vizite[k] = 1;
         numarare[k] = timp++;
@@ -225,7 +241,9 @@ public:
         DFS_3(timp, v, numarare, 0, -1, vizite, vecin);
         return lista;
     }
+    
     //Arbore Partial de Cost Minim
+    
     void APM()
     {
         vector<int> x, y, z, v, capat1, capat2;
@@ -291,7 +309,9 @@ public:
         for (int i = 1; i < noduri; i++)
             out << capat1[i] << " " << capat2[i] << "\n";
     }
+    
     //Dijkstra
+    
     void Djk()
     {
         int  x, y, cost, nr_noduri, p, q;
@@ -372,7 +392,9 @@ public:
                 out << drumuri[i] << " ";
         }
     }
+    
     //Bellman-Ford
+    
     void BF()
     {
         vector <int> costuri[1000], distanta, v;
@@ -416,7 +438,9 @@ public:
                 out << distanta[i] << " ";
 
     }
+    
     //Paduri de multimi disjuncte
+    
     int get_root(int x, vector<int>multime)
     {
         while (multime[x] != x)
@@ -455,7 +479,9 @@ public:
             }
         }
     }
+    
     //Floyd-Warshall
+    
     void citire_FW()
     {
         in >> noduri;
@@ -483,7 +509,9 @@ public:
             out << "\n";
         }
     }
+    
     //Diametrul unui arbore
+
     void citire_arbore()
     {
         in >> noduri;
@@ -526,7 +554,9 @@ public:
         DFS_arbore(start, 0);
         out << maxim + 1; 
     }
+    
     //Flux maxim
+    
     void citire_flux()
     {
         in >> noduri >> muchii;
@@ -590,22 +620,27 @@ public:
         } while (vizitat[noduri]);
         out << flux;
     }
+
     //Ciclu Eulerian
+
     void citire_Euler()
     {
         in >> noduri >> muchii;
         okey.resize(noduri + 1);
-        for (int i = 0; i <= muchii; i++)
+
+        for (int i = 0; i <= noduri; i++)
         {
             adiacenta[i].resize(noduri + 1);
             pozitii[i].resize(noduri + 1);
         }
-        for (int i = 0; i <= muchii; i++)
+
+        for (int i = 0; i <= noduri; i++)
         {
             okey.push_back(0);
             adiacenta[i].push_back(0);
             pozitii[i].push_back(0);
         }
+
         for (int i = 1; i <= muchii; i++)
         {
             int x, y;
@@ -616,25 +651,95 @@ public:
             pozitii[y].push_back(i);
         }
     }
-    void dfs_Euler(int x)
+    void dfs_Euler(int x, vector<int> &vizite, vector<int> &ciclu_euler)
     {
-        for (int i = 0; i < adiacenta[x].size(); i++)
-            if (!okey[pozitii[x][i]])
+        while (!adiacenta[x].empty())
+        {
+            int vecin = adiacenta[x].back();
+            int pozitie = pozitii[x].back();
+
+            adiacenta[x].pop_back();
+            pozitii[x].pop_back();
+
+            if (vizite[pozitie] == 0)
             {
-                okey[pozitii[x][i]] = 1;
-                dfs_Euler(adiacenta[x][i]);
+                vizite[pozitie]++;
+                dfs_Euler(vecin, vizite, ciclu_euler);
             }
-        out << x << " ";
+        }
+        ciclu_euler.push_back(x);
     }
     void afisare_Euler()
     {
+        vector<int> vizite(muchii + 1, 0);
+        vector<int> ciclu_euler;
         for (int i = 1; i <= noduri; i++)
             if (adiacenta[i].size() % 2 != 0)
             {
                 out << "-1\n";
-                break;
+                return;
             }
-        dfs_Euler(1);
+
+        dfs_Euler(1, vizite, ciclu_euler);
+
+        for (int i = 1; i < ciclu_euler.size() - 1; i++)
+            out << ciclu_euler[i] << " ";
+    }
+
+    //Ciclu Hamiltonian
+
+    void citire_Hamilton()
+    {
+        in >> noduri >> muchii;
+        minim = 100000000;
+
+        for (int i = 0; i <= noduri; i++)
+        {
+            okey.resize(noduri + 1);
+            adiacenta[i].resize(noduri + 1);
+        }
+            
+        for (int i = 1; i <= muchii; i++)
+        {
+            int x, y, c;
+            in >> x >> y >> c;
+            adiacenta[x][y] = c;
+        }
+    }
+    int vizitate(vector<int> okey)
+    {
+        for (int i = 1; i < noduri; i++)
+            if (okey[i] == 0)
+                return 0;
+        return 1;
+    }
+    void verificare(int nod)
+    {
+        if (vizitate(okey) && adiacenta[nod][0] > 0)
+        {
+            suma += adiacenta[nod][0];
+            minim = min(minim, suma);
+            suma -= adiacenta[nod][0];
+            return;
+        }
+
+        for (int j = 1; j <= noduri; j++)
+            if (!okey[j] && adiacenta[nod][j] > 0)
+            {
+                okey[j] = 1;
+                suma += adiacenta[nod][j];
+                verificare(j);
+                suma -= adiacenta[nod][j];
+                okey[j] = 0;
+            }
+    }
+    void afisare_Hamilton()
+    {
+        verificare(0);
+        if (minim != 100000000)
+            out << minim << "\n";
+        else
+            out << "Nu exista solutie\n";
     }
 };
 int main()
@@ -657,6 +762,7 @@ int main()
     cout << "13-Diametrul unui Arbore\n";
     cout << "14-Flux Maxim\n";
     cout << "15-Ciclu Eulerian\n";
+    cout << "16-Ciclu Hamiltonian\n";
     cout << "Introduceti numarul problemei de rezolat:";
     cin >> nr_problema;
     if (nr_problema == 1)
@@ -853,6 +959,24 @@ int main()
         */
         g.citire_Euler();
         g.afisare_Euler();
+    }
+    else if (nr_problema == 16)
+    {
+    /*
+    5 10
+    0 1 9
+    0 3 8
+    1 0 7
+    1 2 1
+    1 4 3
+    2 0 5
+    2 4 4
+    3 2 6
+    4 3 7
+    4 1 1
+    */
+    g.citire_Hamilton();
+    g.afisare_Hamilton();
     }
     cout << "\nProblema " << nr_problema << " a fost rezolvata, verificati in date.out ce s-a afisat\n";
     in.close();
